@@ -101,8 +101,8 @@ public class SetupLocalPlayer : NetworkBehaviour {
 		{
 			GetComponent<PlayerController>().enabled = false;
 		}
-
-		GameObject canvas = GameObject.FindWithTag("MainCanvas");
+        GetComponent<Rigidbody>().isKinematic = !isLocalPlayer;
+        GameObject canvas = GameObject.FindWithTag("MainCanvas");
 		nameLabel = Instantiate(namePrefab, Vector3.zero, Quaternion.identity) as Text;
 		nameLabel.transform.SetParent(canvas.transform);
 	}
