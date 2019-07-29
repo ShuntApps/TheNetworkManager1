@@ -11,12 +11,23 @@ public class SetupLocalPlayer : NetworkBehaviour {
 	public Transform namePos;
 	string textboxname = "";
 	string colourboxname = "";
+    public Slider healthPrefab;
+    public Slider healthBar;
 
 	[SyncVar (hook = "OnChangeName")]
 	public string pName = "player";
 
 	[SyncVar (hook = "OnChangeColour")]
 	public string pColour = "#ffffff";
+
+    [SyncVar (hook = "OnChangeHealth")]
+    public int healthValue=100;
+
+    void OnChangeHealth(int n)
+    {
+        healthValue = 0;
+        healthBar.value = healthValue;
+    }
 
     void OnChangeName (string n)
     {
@@ -35,6 +46,7 @@ public class SetupLocalPlayer : NetworkBehaviour {
             	r.material.SetColor("_Color", ColorFromHex(pColour));
         }
     }
+
 
 
 	[Command]
@@ -56,6 +68,13 @@ public class SetupLocalPlayer : NetworkBehaviour {
             	r.material.SetColor("_Color", ColorFromHex(pColour));
         }
 	}
+
+    [Command]
+    public void CmdChangeHealth(int amount)
+    {
+        healthValue = healthValue + amount;
+        healthBar.value = healthValue;
+    }
 
 	void OnGUI()
 	{
@@ -105,30 +124,51 @@ public class SetupLocalPlayer : NetworkBehaviour {
         GameObject canvas = GameObject.FindWithTag("MainCanvas");
 		nameLabel = Instantiate(namePrefab, Vector3.zero, Quaternion.identity) as Text;
 		nameLabel.transform.SetParent(canvas.transform);
+
+        healthBar = Instantiate(healthPrefab, Vector3.zero, Quaternion.identity) as Slider;
+        healthBar.transform.SetParent(canvas.transform);
 	}
 
 	public void OnDestroy()
 	{
 		if(nameLabel != null)
 			Destroy(nameLabel.gameObject);
-	}
 
-	void Update()
+        if (healthBar != null)
+            Destroy(healthBar.gameObject);
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if(isLocalPlayer&& collision.gameObject.tag == "bullet")
+        {
+            CmdChangeHealth(-5);
+        }
+    }
+
+
+
+    void Update()
 	{
-		//determine if the object is inside the camera's viewing volume
-		if(nameLabel != null)
-		{
-			Vector3 screenPoint = Camera.main.WorldToViewportPoint(this.transform.position);
-			bool onScreen = screenPoint.z > 0 && screenPoint.x > 0 && 
-			                screenPoint.x < 1 && screenPoint.y > 0 && screenPoint.y < 1;
-			//if it is on screen draw its label attached to is name position
-			if(onScreen)
-			{
-				Vector3 nameLabelPos = Camera.main.WorldToScreenPoint(namePos.position);
-				nameLabel.transform.position = nameLabelPos;
-			}
-			else //otherwise draw it WAY off the screen 
-				nameLabel.transform.position = new Vector3(-1000,-1000,0);
-		}
+        //determine if the object is inside the camera's viewing volume
+        if (nameLabel != null)
+        {
+            Vector3 screenPoint = Camera.main.WorldToViewportPoint(this.transform.position);
+            bool onScreen = screenPoint.z > 0 && screenPoint.x > 0 &&
+                            screenPoint.x < 1 && screenPoint.y > 0 && screenPoint.y < 1;
+            //if it is on screen draw its label attached to is name position
+            if (onScreen)
+            {
+                Vector3 nameLabelPos = Camera.main.WorldToScreenPoint(namePos.position);
+                nameLabel.transform.position = nameLabelPos;
+                healthBar.transform.position = nameLabelPos + new Vector3(0, 15, 0);
+            }
+            else
+            {//otherwise draw it WAY off the screen 
+                nameLabel.transform.position = new Vector3(-1000, -1000, 0);
+                healthBar.transform.position = new Vector3(-1000, -1000, 0);
+
+            }
+        }
 	}
 }
