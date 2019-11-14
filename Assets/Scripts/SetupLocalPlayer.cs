@@ -13,12 +13,14 @@ public class SetupLocalPlayer : NetworkBehaviour {
 	string colourboxname = "";
     public Slider healthPrefab;
     public Slider healthBar;
+    public InputField nameEntry;
+    public Dropdown colourSelect;
 
 	[SyncVar (hook = "OnChangeName")]
 	public string pName = "player";
 
 	[SyncVar (hook = "OnChangeColour")]
-	public string pColour = "#ffffff";
+	public Color pColour = Color.black;
 
     [SyncVar (hook = "OnChangeHealth")]
     public int healthValue=100;
@@ -35,15 +37,16 @@ public class SetupLocalPlayer : NetworkBehaviour {
 		nameLabel.text = pName;
     }
 
-    void OnChangeColour (string n)
+    void OnChangeColour (Color newColour)
     {
-		pColour = n;
+		pColour = newColour;
 		Renderer[] rends = GetComponentsInChildren<Renderer>( );
 
         foreach( Renderer r in rends )
         {
          	if(r.gameObject.name == "BODY")
-            	r.material.SetColor("_Color", ColorFromHex(pColour));
+            	r.material.SetColor("_Color", pColour);
+            Debug.Log(r.material.color);
         }
     }
 
@@ -57,7 +60,7 @@ public class SetupLocalPlayer : NetworkBehaviour {
 	}
 
 	[Command]
-	public void CmdChangeColour(string newColour)
+	public void CmdChangeColour(Color newColour)
 	{
 		pColour = newColour;
 		Renderer[] rends = GetComponentsInChildren<Renderer>( );
@@ -65,7 +68,7 @@ public class SetupLocalPlayer : NetworkBehaviour {
         foreach( Renderer r in rends )
         {
          	if(r.gameObject.name == "BODY")
-            	r.material.SetColor("_Color", ColorFromHex(pColour));
+            	r.material.SetColor("_Color", pColour);
         }
 	}
 
@@ -76,6 +79,7 @@ public class SetupLocalPlayer : NetworkBehaviour {
         healthBar.value = healthValue;
     }
 
+    /**
 	void OnGUI()
 	{
 		if(isLocalPlayer)
@@ -88,24 +92,46 @@ public class SetupLocalPlayer : NetworkBehaviour {
 			if(GUI.Button(new Rect(275,15,35,25),"Set"))
 				CmdChangeColour(colourboxname);
 		}
-	}
 
+	}*/
 
-	//Credit for this method: from http://answers.unity3d.com/questions/812240/convert-hex-int-to-colorcolor32.html
-	//hex for testing green: 04BF3404  red: 9F121204  blue: 221E9004
-	Color ColorFromHex(string hex)
-	{
-		hex = hex.Replace ("0x", "");
-        hex = hex.Replace ("#", "");
-        byte a = 255;
-        byte r = byte.Parse(hex.Substring(0,2), System.Globalization.NumberStyles.HexNumber);
-        byte g = byte.Parse(hex.Substring(2,2), System.Globalization.NumberStyles.HexNumber);
-        byte b = byte.Parse(hex.Substring(4,2), System.Globalization.NumberStyles.HexNumber);
-        if(hex.Length == 8)
+   public void setPlayerDetails()
+    {
+        if(isLocalPlayer)
         {
-             a = byte.Parse(hex.Substring(4,2), System.Globalization.NumberStyles.HexNumber);
+            Color newColour = Color.black ;
+            if(colourSelect.value==0)
+            {
+                newColour = Color.red;
+            }
+            else if (colourSelect.value == 1)
+            {
+                newColour = Color.blue;
+            }
+            else if (colourSelect.value == 2)
+            {
+                newColour = Color.green;
+            }
+            else if (colourSelect.value == 3)
+            {
+                newColour = Color.magenta;
+            }
+            else if (colourSelect.value == 4)
+            {
+                newColour = Color.grey;
+            }
+
+            CmdChangeName(nameEntry.text);
+            CmdChangeColour(newColour);
+            showHideGUI();
         }
-        return new Color32(r,g,b,a);
+    }
+
+    public void showHideGUI()
+    {
+        nameEntry.gameObject.SetActive(!nameEntry.gameObject.activeInHierarchy);
+        colourSelect.gameObject.SetActive(!colourSelect.gameObject.activeInHierarchy);
+        GameObject.Find("NetworkManager").GetComponent<NetworkManagerHUD>().showGUI = !GameObject.Find("NetworkManager").GetComponent<NetworkManagerHUD>().showGUI;
     }
 
 	// Use this for initialization
@@ -115,7 +141,14 @@ public class SetupLocalPlayer : NetworkBehaviour {
 		{
 			GetComponent<PlayerController>().enabled = true;
 			CameraFollow360.player = this.gameObject.transform;
-		}
+            colourSelect = GameObject.Find("ColourDropdown").GetComponent<Dropdown>();
+            nameEntry = GameObject.Find("Name").GetComponent<InputField>();
+            colourSelect.GetComponentInChildren<Button>().onClick.AddListener(setPlayerDetails);
+            if(Input.GetKeyDown(KeyCode.Escape))
+            {
+                showHideGUI();
+            }
+        }
 		else
 		{
 			GetComponent<PlayerController>().enabled = false;
@@ -167,7 +200,6 @@ public class SetupLocalPlayer : NetworkBehaviour {
             {//otherwise draw it WAY off the screen 
                 nameLabel.transform.position = new Vector3(-1000, -1000, 0);
                 healthBar.transform.position = new Vector3(-1000, -1000, 0);
-
             }
         }
 	}
