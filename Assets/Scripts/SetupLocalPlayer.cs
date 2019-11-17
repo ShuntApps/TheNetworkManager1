@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class SetupLocalPlayer : NetworkBehaviour {
 
+    //UI related variables
 	public Text namePrefab;
 	public Text nameLabel;
 	public Transform namePos;
@@ -16,6 +17,7 @@ public class SetupLocalPlayer : NetworkBehaviour {
     public InputField nameEntry;
     public Dropdown colourSelect;
 
+    //syncvars for handling player data including health and name the hooks call that function on change
 	[SyncVar (hook = "OnChangeName")]
 	public string pName = "player";
 
@@ -25,9 +27,28 @@ public class SetupLocalPlayer : NetworkBehaviour {
     [SyncVar (hook = "OnChangeHealth")]
     public int healthValue=100;
 
+
+    /**
+     * OnChangeHealth and it's corresponding command obviously relate to the changing of health, the Cmd is called from the localPlayer
+     * when it takes damage. The values are updated then the "hook" calls the "onchange" function which updates the health value across
+     * the other copies on the network.
+     * 
+     */
     void OnChangeHealth(int n)
     {
-        healthValue = 0;
+        healthBar.value = healthValue;
+        if(isLocalPlayer&&healthValue<=0)
+        {
+            CmdChangeName("You Lose");
+        }
+    }
+
+    [Command]
+    public void CmdChangeHealth(int amount)
+    {
+        if (!isServer)
+            return;
+        healthValue = healthValue + amount;
         healthBar.value = healthValue;
     }
 
@@ -46,12 +67,10 @@ public class SetupLocalPlayer : NetworkBehaviour {
         {
          	if(r.gameObject.name == "BODY")
             	r.material.SetColor("_Color", pColour);
-            Debug.Log(r.material.color);
+            //Debug.Log(r.material.color);
         }
     }
-
-
-
+       
 	[Command]
 	public void CmdChangeName(string newName)
 	{
@@ -72,29 +91,11 @@ public class SetupLocalPlayer : NetworkBehaviour {
         }
 	}
 
-    [Command]
-    public void CmdChangeHealth(int amount)
-    {
-        healthValue = healthValue + amount;
-        healthBar.value = healthValue;
-    }
-
     /**
-	void OnGUI()
-	{
-		if(isLocalPlayer)
-		{
-			textboxname = GUI.TextField (new Rect (25, 15, 100, 25), textboxname);
-			if(GUI.Button(new Rect(130,15,35,25),"Set"))
-				CmdChangeName(textboxname);
-
-			colourboxname = GUI.TextField (new Rect (170, 15, 100, 25), colourboxname);
-			if(GUI.Button(new Rect(275,15,35,25),"Set"))
-				CmdChangeColour(colourboxname);
-		}
-
-	}*/
-
+     * This function for the local player sets the colours depending on the dropdown and textbox and then
+     * propagates that across the network in a similar way to health
+     */
+       
    public void setPlayerDetails()
     {
         if(isLocalPlayer)
@@ -137,23 +138,22 @@ public class SetupLocalPlayer : NetworkBehaviour {
 	// Use this for initialization
 	void Start () 
 	{
+        //If it's a local player object enable the scripts that move and track the player and assign the relevant UI items. If not, disable the controls
 		if(isLocalPlayer)
 		{
 			GetComponent<PlayerController>().enabled = true;
 			CameraFollow360.player = this.gameObject.transform;
             colourSelect = GameObject.Find("ColourDropdown").GetComponent<Dropdown>();
             nameEntry = GameObject.Find("Name").GetComponent<InputField>();
-            colourSelect.GetComponentInChildren<Button>().onClick.AddListener(setPlayerDetails);
-            if(Input.GetKeyDown(KeyCode.Escape))
-            {
-                showHideGUI();
-            }
+            colourSelect.GetComponentInChildren<Button>().onClick.AddListener(setPlayerDetails);      
         }
 		else
 		{
 			GetComponent<PlayerController>().enabled = false;
 		}
+        //We set the non player controlled to kinematic so we don't have conflicting forces when we move stuff
         GetComponent<Rigidbody>().isKinematic = !isLocalPlayer;
+        //Finish setting up the UI for all tanks
         GameObject canvas = GameObject.FindWithTag("MainCanvas");
 		nameLabel = Instantiate(namePrefab, Vector3.zero, Quaternion.identity) as Text;
 		nameLabel.transform.SetParent(canvas.transform);
@@ -162,6 +162,7 @@ public class SetupLocalPlayer : NetworkBehaviour {
         healthBar.transform.SetParent(canvas.transform);
 	}
 
+    //we don't destroy the tanks yet but if we wanted to...
 	public void OnDestroy()
 	{
 		if(nameLabel != null)
@@ -171,21 +172,21 @@ public class SetupLocalPlayer : NetworkBehaviour {
             Destroy(healthBar.gameObject);
     }
 
+    //what happens when bullets hit
     private void OnCollisionEnter(Collision collision)
     {
-        if(isLocalPlayer&& collision.gameObject.tag == "bullet")
+        if(isLocalPlayer&& collision.gameObject.tag == "Bullet")
         {
             CmdChangeHealth(-5);
         }
     }
 
-
-
     void Update()
 	{
-        //determine if the object is inside the camera's viewing volume
         if (nameLabel != null)
         {
+            //determine if the object is inside the camera's viewing volume
+
             Vector3 screenPoint = Camera.main.WorldToViewportPoint(this.transform.position);
             bool onScreen = screenPoint.z > 0 && screenPoint.x > 0 &&
                             screenPoint.x < 1 && screenPoint.y > 0 && screenPoint.y < 1;
@@ -200,6 +201,14 @@ public class SetupLocalPlayer : NetworkBehaviour {
             {//otherwise draw it WAY off the screen 
                 nameLabel.transform.position = new Vector3(-1000, -1000, 0);
                 healthBar.transform.position = new Vector3(-1000, -1000, 0);
+            }
+        }
+
+        if(isLocalPlayer)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                showHideGUI();
             }
         }
 	}

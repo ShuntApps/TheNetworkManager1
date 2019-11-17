@@ -29,15 +29,15 @@ public class tankShoot : NetworkBehaviour
     {
 
         GameObject bullet = Instantiate(bulletPrefab, bulletSpawn.transform.position, bulletSpawn.transform.rotation);
-        bullet.GetComponent<Rigidbody>().velocity = bulletSpawn.transform.forward * 100;
+        bullet.GetComponent<Rigidbody>().velocity = bulletSpawn.transform.forward * 50;
         Destroy(bullet, 2.5f);
     }
 
-    //create RPC- all RPC muse be prefaced by Rpc  
+    //create RPC- all RPC must be prefaced by Rpc  
     [ClientRpc]
     void RpcSpawnBullet()
     {
-        //if you're not a server spawn a bullet (if you are the below will shoot)
+        //if you're not a server spawn a bullet (if you are the above will shoot)
         if (!isServer)
             SpawnBullet();
     }
