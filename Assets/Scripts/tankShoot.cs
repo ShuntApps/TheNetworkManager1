@@ -8,6 +8,10 @@ public class tankShoot : NetworkBehaviour
     public GameObject bulletPrefab;
     public GameObject bulletSpawn;
 
+    /**
+     * Fairly standard shooting script but updated to send network command data
+     */
+
     // Start is called before the first frame update
     void Start()
     {
@@ -20,14 +24,13 @@ public class tankShoot : NetworkBehaviour
         if (!isLocalPlayer) return;
         if(Input.GetKeyDown(KeyCode.Space))
         {
-            CmdShoot();
-        
+            //Ensures shooting is on all of the versions
+            CmdShoot(); 
         }
     }
 
     void SpawnBullet()
     {
-
         GameObject bullet = Instantiate(bulletPrefab, bulletSpawn.transform.position, bulletSpawn.transform.rotation);
         bullet.GetComponent<Rigidbody>().velocity = bulletSpawn.transform.forward * 50;
         Destroy(bullet, 2.5f);

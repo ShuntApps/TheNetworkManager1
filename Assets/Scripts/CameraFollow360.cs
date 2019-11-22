@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class CameraFollow360 : MonoBehaviour {
 
+    /**
+     * This isn't a networked script and instead locally moves the camera to react to and rotate around the established Player.
+     * 
+     */
+
 	static public Transform player;
 	public float distance = 10;
 	public float height = 5;
@@ -15,11 +20,15 @@ public class CameraFollow360 : MonoBehaviour {
 	{
 		if(player)
 		{
+            /**
+             *Forces the camera to look at a position plus offeset then rotate around this relative position.
+             */
 			Vector3 lookPosition = player.position + lookOffset;
 			Vector3 relativePos = lookPosition - transform.position;
         	Quaternion rot = Quaternion.LookRotation(relativePos);
-			
-			transform.rotation = Quaternion.Slerp(this.transform.rotation, rot, Time.deltaTime * rotSpeed * 0.1f);
+
+            //https://tiborstanko.sk/lerp-vs-slerp.html 
+            transform.rotation = Quaternion.Slerp(this.transform.rotation, rot, Time.deltaTime * rotSpeed * 0.1f);
 			
 			Vector3 targetPos = player.transform.position + player.transform.up * height - player.transform.forward * distance;
 			

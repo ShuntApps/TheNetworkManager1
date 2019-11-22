@@ -39,7 +39,8 @@ public class SetupLocalPlayer : NetworkBehaviour {
         healthBar.value = healthValue;
         if(isLocalPlayer&&healthValue<=0)
         {
-            CmdChangeName("You Lose");
+            CmdChangeName("Loser");
+            GetComponent<PlayerController>().enabled = false;
         }
     }
 
